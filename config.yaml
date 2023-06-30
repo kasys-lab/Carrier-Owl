@@ -3,3 +3,5 @@ subject: 'cat:cs.IR'
 
 # 通知の閾値
 score_threshold: 0
+
+translate: true

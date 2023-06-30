@@ -12,6 +12,7 @@ import textwrap
 from bs4 import BeautifulSoup
 import warnings
 import urllib.parse
+import dataclasses
 from dataclasses import dataclass
 import arxiv
 import requests
@@ -39,11 +40,8 @@ def calc_score(abst: str, keywords: dict) -> (float, list):
             hit_kwd_list.append(word)
     return sum_score, hit_kwd_list
 
-
-def search_keyword(
-        articles: list, keywords: dict, score_threshold: float
-        ) -> list:
-    results = []
+def translate_results(results: list) -> list:
+    translated_results = []
     
     # ヘッドレスモードでブラウザを起動
     options = Options()
@@ -52,6 +50,23 @@ def search_keyword(
     # ブラウザーを起動
     driver = webdriver.Firefox(executable_path=GeckoDriverManager().install(), options=options)
     
+    for result in results:
+        title_trans = get_translated_text('ja', 'en', result.title, driver)
+        abstract = result.abstract.replace('\n', '')
+        abstract_trans = get_translated_text('ja', 'en', abstract, driver)
+        translated_result = dataclasses.replace(result, title=title_trans, abstract=abstract_trans)
+        translated_results.append(translated_result)
+    
+    # ブラウザ停止
+    driver.quit()
+    return translated_results
+
+
+def search_keyword(
+        articles: list, keywords: dict, score_threshold: float, translate: bool = True
+        ) -> list:
+    results = []
+
     for article in articles:
         url = article['arxiv_url']
         title = article['title']
@@ -61,18 +76,13 @@ def search_keyword(
         else:
             score, hit_keywords = 1, []
         if (score != 0) and (score >= score_threshold):
-            title_trans = get_translated_text('ja', 'en', title, driver)
-            abstract = abstract.replace('\n', '')
-            abstract_trans = get_translated_text('ja', 'en', abstract, driver)
-            # abstract_trans = textwrap.wrap(abstract_trans, 40)  # 40行で改行
-            # abstract_trans = '\n'.join(abstract_trans)
             result = Result(
-                    url=url, title=title_trans, abstract=abstract_trans,
-                    score=score, words=hit_keywords)
+                        url=url, title=title, abstract=abstract,
+                        score=score, words=hit_keywords)
             results.append(result)
     
-    # ブラウザ停止
-    driver.quit()
+    results = translate_results(results) if translate else results
+
     return results
 
 
@@ -95,7 +105,7 @@ def notify(results: list, slack_id: str, line_token: str) -> None:
     star = '*'*80
     today = datetime.date.today()
     n_articles = len(results)
-    text = f'{star}\n \t \t {today}\tnum of articles = {n_articles}\n{star}'
+    text = f'{star}\n \t \t {today}\tnum of articles = {n_articles}\n\n{star}'
     send2app(text, slack_id, line_token)
     # descending
     for result in sorted(results, reverse=True, key=lambda x: x.score):
@@ -179,11 +189,13 @@ def main():
 
     config = get_config()
     subject = config['subject']
+
+    translate = config['translate']
     
     keywords = config['keywords'] if 'keywords' in config else {}
     score_threshold = float(config['score_threshold'])
 
-    day_before_yesterday = datetime.datetime.today() - datetime.timedelta(days=2)
+    day_before_yesterday = datetime.datetime.today() - datetime.timedelta(days=1)
     day_before_yesterday_str = day_before_yesterday.strftime('%Y%m%d')
     # datetime format YYYYMMDDHHMMSS
     arxiv_query = f'({subject}) AND ' \
@@ -193,7 +205,7 @@ def main():
                            max_results=1000,
                            sort_by='submittedDate',
                            iterative=False)
-    results = search_keyword(articles, keywords, score_threshold)
+    results = search_keyword(articles, keywords, score_threshold, translate=translate)
 
     slack_id = os.getenv("SLACK_ID") or args.slack_id
     line_token = os.getenv("LINE_TOKEN") or args.line_token

@@ -180,7 +180,7 @@ def main():
     config = get_config()
     subject = config['subject']
     
-    keywords = config['keywords'] if 'keywords' in config" else {}
+    keywords = config['keywords'] if 'keywords' in config else {}
     score_threshold = float(config['score_threshold'])
 
     day_before_yesterday = datetime.datetime.today() - datetime.timedelta(days=2)

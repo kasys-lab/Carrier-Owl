@@ -56,7 +56,10 @@ def search_keyword(
         url = article['arxiv_url']
         title = article['title']
         abstract = article['summary']
-        score, hit_keywords = calc_score(abstract, keywords)
+        if len(keywords) > 0:
+            score, hit_keywords = calc_score(abstract, keywords)
+        else:
+            score, hit_keywords = 1, []
         if (score != 0) and (score >= score_threshold):
             title_trans = get_translated_text('ja', 'en', title, driver)
             abstract = abstract.replace('\n', '')
@@ -176,7 +179,8 @@ def main():
 
     config = get_config()
     subject = config['subject']
-    keywords = config['keywords']
+    
+    keywords = config['keywords'] if 'keywords' in config" else {}
     score_threshold = float(config['score_threshold'])
 
     day_before_yesterday = datetime.datetime.today() - datetime.timedelta(days=2)

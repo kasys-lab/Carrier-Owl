@@ -1,9 +1,5 @@
 # arxivの学問領域の指定
 subject: 'cat:cs.IR'
 
-# 検索キーワード
-keywords:
-    search: 0
-
 # 通知の閾値
 score_threshold: 0

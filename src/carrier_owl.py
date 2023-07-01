@@ -16,6 +16,7 @@ import dataclasses
 from dataclasses import dataclass
 import arxiv
 import requests
+import random
 # setting
 warnings.filterwarnings('ignore')
 
@@ -26,6 +27,7 @@ class Result:
     title: str
     abstract: str
     words: list
+    jp_title: str = ''
     score: float = 0.0
 
 
@@ -54,7 +56,7 @@ def translate_results(results: list) -> list:
         title_trans = get_translated_text('ja', 'en', result.title, driver)
         abstract = result.abstract.replace('\n', '')
         abstract_trans = get_translated_text('ja', 'en', abstract, driver)
-        translated_result = dataclasses.replace(result, title=title_trans, abstract=abstract_trans)
+        translated_result = dataclasses.replace(result, jp_title=title_trans, abstract=abstract_trans)
         translated_results.append(translated_result)
     
     # ブラウザ停止
@@ -100,28 +102,24 @@ def send2app(text: str, slack_id: str, line_token: str) -> None:
         requests.post(line_notify_api, headers=headers, data=data)
 
 
-def notify(results: list, slack_id: str, line_token: str) -> None:
+def notify(results: list, slack_id: str, line_token: str, note: str = '') -> None:
     # 通知
     star = '*'*80
     today = datetime.date.today()
     n_articles = len(results)
-    text = f'{star}\n \t \t {today}\tnum of articles = {n_articles}\n\n{star}'
+    text = f'{star}\n \t \t {today}\tnum of articles = {n_articles}\n\t{note}\n\n{star}'
     send2app(text, slack_id, line_token)
     # descending
     for result in sorted(results, reverse=True, key=lambda x: x.score):
         url = result.url
-        title = result.title
         abstract = result.abstract
-        word = result.words
-        score = result.score
 
-        text = f'\n score: `{score}`'\
-               f'\n hit keywords: `{word}`'\
-               f'\n url: {url}'\
-               f'\n title:    {title}'\
+        text = f'\n url: {url}'\
+               f'\n title:    {result.title}'\
+               f'\n jp_title:    {result.jp_title}'\
                f'\n abstract:'\
                f'\n \t {abstract}'\
-               f'\n {star}'
+               f'\n\n {star}'
 
         send2app(text, slack_id, line_token)
 
@@ -205,11 +203,19 @@ def main():
                            max_results=1000,
                            sort_by='submittedDate',
                            iterative=False)
+    note = ''
+    if len(articles) <= 0:
+        articles = arxiv.query(query=f'{subject}',
+                           max_results=100,
+                           sort_by='submittedDate',
+                           iterative=False)
+        articles = random.choices(articles, k=10)
+        note = 'Randomly displays 10 of the last 100 results'
     results = search_keyword(articles, keywords, score_threshold, translate=translate)
 
     slack_id = os.getenv("SLACK_ID") or args.slack_id
     line_token = os.getenv("LINE_TOKEN") or args.line_token
-    notify(results, slack_id, line_token)
+    notify(results, slack_id, line_token, note=note)
 
 
 if __name__ == "__main__":

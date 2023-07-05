@@ -70,9 +70,9 @@ def search_keyword(
     results = []
 
     for article in articles:
-        url = article['arxiv_url']
-        title = article['title']
-        abstract = article['summary']
+        url = article.entry_id
+        title = article.title
+        abstract = article.summary
         if len(keywords) > 0:
             score, hit_keywords = calc_score(abstract, keywords)
         else:
@@ -193,23 +193,23 @@ def main():
     keywords = config['keywords'] if 'keywords' in config else {}
     score_threshold = float(config['score_threshold'])
 
-    day_before_yesterday = datetime.datetime.today() - datetime.timedelta(days=1)
-    day_before_yesterday_str = day_before_yesterday.strftime('%Y%m%d')
-    # datetime format YYYYMMDDHHMMSS
-    arxiv_query = f'({subject}) AND ' \
-                  f'submittedDate:' \
-                  f'[{day_before_yesterday_str}000000 TO {day_before_yesterday_str}235959]'
-    articles = arxiv.query(query=arxiv_query,
-                           max_results=1000,
-                           sort_by='submittedDate',
-                           iterative=False)
+    day_before_yesterday = datetime.datetime.today() - datetime.timedelta(days=2)
+
+    arxiv_query = f"{subject}"
+    search = arxiv.Search(query=arxiv_query,
+                           max_results=100,
+                           sort_by=arxiv.SortCriterion.LastUpdatedDate)
+    articles = []
+    for result in search.results():
+        if result.updated.date() == day_before_yesterday.date():
+            articles.append(result)
+    
     note = ''
     if len(articles) <= 0:
-        articles = arxiv.query(query=f'{subject}',
-                           max_results=100,
-                           sort_by='submittedDate',
-                           iterative=False)
-        articles = random.choices(articles, k=10)
+        articles = arxiv.Search(query=f'{subject}',
+                           max_results=500,
+                           sort_by=arxiv.SortCriterion.LastUpdatedDate).results()
+        articles = random.choices(list(articles), k=10)
         note = 'Randomly displays 10 of the last 100 results'
     results = search_keyword(articles, keywords, score_threshold, translate=translate)
 

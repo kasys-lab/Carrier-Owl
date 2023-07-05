@@ -1,14 +1,13 @@
 [[package]]
 name = "arxiv"
-version = "0.5.4"
+version = "1.4.7"
 description = "Python wrapper for the arXiv API: http://arxiv.org/help/api/"
 category = "main"
 optional = false
-python-versions = "*"
+python-versions = ">=3.7"
 
 [package.dependencies]
 feedparser = "*"
-requests = "*"
 
 [[package]]
 name = "beautifulsoup4"
@@ -220,12 +219,12 @@ test = ["pytest (>=3.0.0)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "b81b973301438ed5899cc48fe8ae82590707e90e6c89b3c39fd7f632730e5cad"
+content-hash = "f52ab192d19626629f05b694a9e58bc6d9e39d162825b1a437799fd125fdf023"
 
 [metadata.files]
 arxiv = [
-    {file = "arxiv-0.5.4-py3-none-any.whl", hash = "sha256:49e623bd4c88644ff08882bbb213f5858452034435deef8b0ddc07caa1d22386"},
-    {file = "arxiv-0.5.4.tar.gz", hash = "sha256:af3eca0ab9f6ecfd567cc1bd25d382e03c1e8518f05719dd0789e4d3745ba7d4"},
+    {file = "arxiv-1.4.7-py3-none-any.whl", hash = "sha256:22b8f610957bb6859a25fac9dc205ab6ba76d521791119a5762ea52625e398a0"},
+    {file = "arxiv-1.4.7.tar.gz", hash = "sha256:100c8d6b9cd04c7f55f11b34616beb7a1623ab0564b66161b4aeeeb8912c5806"},
 ]
 beautifulsoup4 = [
     {file = "beautifulsoup4-4.12.2-py3-none-any.whl", hash = "sha256:bd2520ca0d9d7d12694a53d44ac482d181b4ec1888909b035a3dbf40d0f57d4a"},
